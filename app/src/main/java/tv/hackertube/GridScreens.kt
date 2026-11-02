@@ -42,6 +42,15 @@ fun HomeScreen(page: HomePage) {
                 contentPadding = PaddingValues(vertical = 6.dp, horizontal = 4.dp),
             ) {
                 item {
+                    // one chip that cycles through the sorts, so the bar stays one row tall
+                    Chip(
+                        "Sort: ${page.sort.label}",
+                        { page.cycleSort() },
+                        Modifier.restoreFocus(page, SORT_FOCUS),
+                        selected = page.sort != Sort.Best,
+                    )
+                }
+                item {
                     Chip(
                         "All",
                         { page.show(null) },
@@ -67,7 +76,9 @@ private const val ALL = "area:"
 @Composable
 fun GridScreen(page: GridPage) {
     VideoGrid(page, page.feed, page.grid, page.empty) {
-        fullWidth("head") { PageHead(page.title, page.crumb, page.subtitle) }
+        fullWidth("head") {
+            PageHead(page.title, page.crumb, page.subtitle, Modifier.restoreFocus(page, "head"))
+        }
     }
 }
 
@@ -81,6 +92,10 @@ private fun VideoGrid(
     header: LazyGridScope.() -> Unit,
 ) {
     val scope = rememberCoroutineScope()
+    // picking the current section in the sidebar asks for the top of the page
+    LaunchedEffect(page.topTick) {
+        if (page.topTick > 0) page.goToTop { state.scrollToItem(0) }
+    }
     LaunchedEffect(feed) {
         snapshotFlow { state.layoutInfo.run { (visibleItemsInfo.lastOrNull()?.index ?: 0) to totalItemsCount } }
             .collect { (last, total) -> if (last >= total - 12) feed.more() }

@@ -42,6 +42,10 @@ fun SearchScreen(page: SearchPage) {
     val results = page.results
     val scope = rememberCoroutineScope()
     if (results != null) LaunchedEffect(results) { results.load() }
+    // picking Search again in the sidebar asks for the top of the results
+    LaunchedEffect(page.topTick) {
+        if (page.topTick > 0) page.goToTop { page.list.scrollToItem(0) }
+    }
     LazyColumn(
         state = page.list,
         contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 48.dp),
