@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -37,10 +38,10 @@ import java.util.Locale
 fun CategoriesScreen(page: CategoriesPage) {
     val nav = LocalNavigator.current
     Loaded(page.areas) { areas ->
-        PageColumn(page.list) {
+        PageColumn(page, page.list) {
             item(key = "#head") {
                 Column {
-                    PageHead("Categories")
+                    PageHead("Categories", modifier = Modifier.restoreFocus(page, "head"))
                     FlowRow(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                         quickLinks.forEachIndexed { i, (title, filters) ->
                             Pill(
@@ -90,11 +91,12 @@ private val quickLinks = listOf(
 @Composable
 fun PlaylistsScreen(page: PlaylistsPage) {
     Loaded(page.playlists) { playlists ->
-        PageColumn(page.list) {
+        PageColumn(page, page.list) {
             item(key = "#head") {
                 PageHead(
                     "Playlists",
                     subtitle = "Curated by Claude from what Hacker News recommends, each in a deliberate order.",
+                    modifier = Modifier.restoreFocus(page, "head"),
                 )
             }
             val first = playlists.firstOrNull { (it.tier ?: "deep") == tiers.first().tier }
@@ -168,18 +170,30 @@ private fun PlaylistTile(playlist: PlaylistCard, modifier: Modifier, focusModifi
 @Composable
 fun PlaylistScreen(page: PlaylistPage) {
     Loaded(page.playlist) { playlist ->
-        PageColumn(page.list) {
+        PageColumn(page, page.list) {
             item(key = "#head") {
-                Row(horizontalArrangement = Arrangement.spacedBy(24.dp), modifier = Modifier.padding(bottom = 16.dp)) {
-                    Mosaic(playlist.videos.map { it.vid }, Modifier.width(320.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Playlists", style = Type.sub)
-                        Text(playlist.title, style = Type.pageTitle)
-                        Text(
-                            "Curated by Claude · ${playlist.videos.size} videos · ${hours(playlist.minutes)}",
-                            style = Type.sub,
-                        )
-                        Text(playlist.intro, style = Type.body, modifier = Modifier.padding(top = 12.dp))
+                // focusable, so that scrolling back up reveals the whole introduction
+                Surface(
+                    onClick = {},
+                    modifier = Modifier.restoreFocus(page, "head").padding(bottom = 16.dp),
+                    shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
+                    colors = ClickableSurfaceDefaults.colors(
+                        containerColor = Color.Transparent,
+                        focusedContainerColor = Colors.bg2,
+                    ),
+                    scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+                ) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(24.dp)) {
+                        Mosaic(playlist.videos.map { it.vid }, Modifier.width(320.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text("Playlists", style = Type.sub)
+                            Text(playlist.title, style = Type.pageTitle)
+                            Text(
+                                "Curated by Claude · ${playlist.videos.size} videos · ${hours(playlist.minutes)}",
+                                style = Type.sub,
+                            )
+                            Text(playlist.intro, style = Type.body, modifier = Modifier.padding(top = 12.dp))
+                        }
                     }
                 }
             }
@@ -195,12 +209,18 @@ fun PlaylistScreen(page: PlaylistPage) {
 }
 
 @Composable
-private fun PageColumn(state: LazyListState, content: LazyListScope.() -> Unit) = LazyColumn(
-    state = state,
-    contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 48.dp),
-    verticalArrangement = Arrangement.spacedBy(20.dp),
-    modifier = Modifier.fillMaxSize(),
-    content = content,
-)
+private fun PageColumn(page: Page, state: LazyListState, content: LazyListScope.() -> Unit) {
+    // picking the current section in the sidebar asks for the top of the page
+    LaunchedEffect(page.topTick) {
+        if (page.topTick > 0) page.goToTop { state.scrollToItem(0) }
+    }
+    LazyColumn(
+        state = state,
+        contentPadding = PaddingValues(start = 24.dp, end = 24.dp, top = 20.dp, bottom = 48.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+        modifier = Modifier.fillMaxSize(),
+        content = content,
+    )
+}
 
 private fun count(n: Int) = "%,d".format(Locale.US, n)

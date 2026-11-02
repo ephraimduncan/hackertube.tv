@@ -127,10 +127,19 @@ class Navigator(private val context: Context, private val library: Library) {
     }
 
     fun go(section: Section) {
+        // picking the section that is already showing means "take me back to the top"
+        val again = section == this.section
         this.section = section
         stack.removeRange(1, stack.size)
-        pageFor(section)?.let { stack += it }
-        page.needsFocus = true
+        val fresh = pageFor(section)
+        if (fresh != null) {
+            stack += fresh
+            page.needsFocus = true
+        } else if (again) {
+            page.scrollToTop()
+        } else {
+            page.needsFocus = true
+        }
     }
 
     fun back() {

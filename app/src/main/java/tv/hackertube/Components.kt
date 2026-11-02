@@ -240,12 +240,34 @@ fun Wordmark(modifier: Modifier = Modifier) {
     )
 }
 
+/**
+ * The title at the top of a page. It takes focus, so that a viewer who has scrolled past it can
+ * press Up to bring it back. Without that, nothing above the first row can be reached on a TV.
+ */
 @Composable
-fun PageHead(title: String, crumb: String? = null, subtitle: String? = null) {
-    Column(Modifier.padding(top = 8.dp, bottom = 12.dp)) {
-        if (crumb != null) Text(crumb, style = Type.sub.copy(fontSize = 14.sp))
-        Text(title, style = Type.pageTitle)
-        if (subtitle != null) Text(subtitle, style = Type.sub.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 4.dp))
+fun PageHead(
+    title: String,
+    crumb: String? = null,
+    subtitle: String? = null,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = {},
+        modifier = modifier,
+        shape = ClickableSurfaceDefaults.shape(RoundedCornerShape(12.dp)),
+        colors = ClickableSurfaceDefaults.colors(
+            containerColor = Color.Transparent,
+            focusedContainerColor = Colors.bg2,
+        ),
+        scale = ClickableSurfaceDefaults.scale(focusedScale = 1f),
+    ) {
+        Column(Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 12.dp)) {
+            if (crumb != null) Text(crumb, style = Type.sub.copy(fontSize = 14.sp))
+            Text(title, style = Type.pageTitle)
+            if (subtitle != null) {
+                Text(subtitle, style = Type.sub.copy(fontSize = 14.sp), modifier = Modifier.padding(top = 4.dp))
+            }
+        }
     }
 }
 
